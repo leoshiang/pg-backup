@@ -1,7 +1,7 @@
 {
   "name": "pgbackup",
   "homepage": "https://github.com/leoshiang/PGBackup#readme",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "這是一個備份 PostgreSQL 資料庫的小工具，支援作業系統 Windows/Linux/MacOS。",
   "main": "PGBackup.js",
   "scripts": {
