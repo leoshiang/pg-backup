@@ -3,7 +3,7 @@ const moment = require('moment')
 const BackupAction = require('./BackupAction')
 
 /**
- * 每日備份
+ * 每週備份
  * @class
  */
 class WeeklyBackupAction extends BackupAction {
@@ -28,12 +28,12 @@ class WeeklyBackupAction extends BackupAction {
      */
     _getOutputFileName (dbName) {
         const today = new moment()
-        const year = today.year()
+        const year = today.isoWeekYear()
         const weekNumber = today.isoWeek()
         return this._config.weeklyBackupDir + path.sep
             + `week-${year}-${weekNumber}-`
             + dbName
-            + (this._config.compressOutputFile ? '.gz' : '.sql')
+            + (this._config.compressOutputFile ? '.dump' : '.sql')
     }
 
     /**
@@ -58,11 +58,12 @@ class WeeklyBackupAction extends BackupAction {
         const regex = new RegExp('^week-(\\d+)-(\\d+)-.*')
         const match = regex.exec(fileName)
         if (!match) return false
-        const currentYear = moment().year()
-        const backupYear = match[1].toString()
-        const backupWeekNumber = match[2].toString()
-        const retentionStartWeek = retentionStartDate.week()
-        return (backupWeekNumber <= retentionStartWeek) && backupYear <= currentYear
+        const backupYear = parseInt(match[1], 10)
+        const backupWeekNumber = parseInt(match[2], 10)
+        if (isNaN(backupYear) || isNaN(backupWeekNumber)) return false
+
+        const backupMoment = moment().isoWeekYear(backupYear).isoWeek(backupWeekNumber).startOf('isoWeek')
+        return backupMoment.isBefore(moment(retentionStartDate).startOf('isoWeek'))
     }
 
     /**

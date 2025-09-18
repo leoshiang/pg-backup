@@ -101,8 +101,10 @@ class BackupAction {
      */
     _deleteOldBackups () {
         if (!this._isRetentionPeriodValid()) return
+        const dir = this._getBackupDirectory()
+        if (!fs.existsSync(dir)) return
         const retentionStartDate = this._getRetentionStartDate()
-        let files = fs.readdirSync(this._getBackupDirectory())
+        let files = fs.readdirSync(dir)
         let oldBackupFiles = files.filter(x => this._isOldBackupFile(x, retentionStartDate))
         oldBackupFiles.forEach(x => this._deleteOldBackupFile(x))
     }
@@ -135,7 +137,7 @@ class BackupAction {
         try {
             if (!fs.existsSync(backupDirectory)) {
                 MessageService.sendMessage(`目錄 ${backupDirectory} 不存在，嘗試建立...`)
-                fs.mkdirSync(backupDirectory)
+                fs.mkdirSync(backupDirectory, { recursive: true })
                 MessageService.sendMessage(`已建立目錄 ${backupDirectory}。`)
             }
         } catch (err) {
@@ -172,13 +174,14 @@ class BackupAction {
         let dbNameList
         const client = this._createClient()
         try {
-            client.connect()
+            await client.connect()
             const result = await client.query('SELECT datname FROM pg_database WHERE datistemplate = false;')
             dbNameList = result.rows.map(x => x.datname)
-            client.end()
         } catch (error) {
             MessageService.sendMessage(error)
             process.exit(1)
+        } finally {
+            try { await client.end() } catch (_) {}
         }
         return dbNameList
     }
@@ -243,6 +246,7 @@ class BackupAction {
             await this._createDbBackupList()
             this._doBackup()
             this._deleteOldBackups()
+            this._afterExecute()
             return true
         } catch(error) {
             this._afterExecute()

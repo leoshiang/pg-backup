@@ -30,7 +30,7 @@ class DailyBackupAction extends BackupAction {
         return this._config.dailyBackupDir + path.sep
             + moment().format('YYYYMMDD') + '-'
             + dbName
-            + (this._config.compressOutputFile ? '.gz' : '.sql')
+            + (this._config.compressOutputFile ? '.dump' : '.sql')
     }
 
     /**

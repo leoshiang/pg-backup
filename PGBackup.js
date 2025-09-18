@@ -8,6 +8,7 @@
     const moment = require('moment')
     const MessageService = require('./src/MessageService/MessageService')
     const child_process = require('node:child_process')
+    try { require('dotenv').config() } catch (_) {}
 
     const { program } = require('commander')
     program
@@ -28,17 +29,30 @@
         MessageService._init(config)
         try {
             if (config.beforeBackupScript) {
-                child_process.execSync(config.beforeBackupScript)
+                try {
+                    child_process.execSync(config.beforeBackupScript, { stdio: 'inherit' })
+                } catch (err) {
+                    MessageService.sendMessage(config.errorEmoji + `前置腳本失敗：${err}`)
+                    process.exit(1)
+                }
             }
-            MessageService.sendMessage(config.beforeBackupMessage)
+            if (config.beforeBackupMessage) {
+                MessageService.sendMessage(config.beforeBackupMessage)
+            }
             await doDailyBackup(config)
             await doWeeklyBackup(config)
             await doMonthlyBackup(config)
         } finally {
             if (config.afterBackupScript) {
-                child_process.execSync(config.afterBackupScript)
+                try {
+                    child_process.execSync(config.afterBackupScript, { stdio: 'inherit' })
+                } catch (err) {
+                    MessageService.sendMessage(config.errorEmoji + `後置腳本失敗：${err}`)
+                }
             }
-            MessageService.sendMessage(config.afterBackupMessage)
+            if (config.afterBackupMessage) {
+                MessageService.sendMessage(config.afterBackupMessage)
+            }
         }
     }
 

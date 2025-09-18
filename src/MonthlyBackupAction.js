@@ -3,7 +3,7 @@ const moment = require('moment')
 const BackupAction = require('./BackupAction')
 
 /**
- * 每日備份
+ * 每月備份
  * @class
  */
 class MonthlyBackupAction extends BackupAction {
@@ -33,7 +33,7 @@ class MonthlyBackupAction extends BackupAction {
         return this._config.monthlyBackupDir + path.sep
             + `month-${year}-${monthNumber}-`
             + dbName
-            + (this._config.compressOutputFile ? '.gz' : '.sql')
+            + (this._config.compressOutputFile ? '.dump' : '.sql')
     }
 
     /**
@@ -44,7 +44,7 @@ class MonthlyBackupAction extends BackupAction {
     _getRetentionStartDate () {
         const today = new moment()
         const retentionPeriod = this._config.monthlyBackupRetentionPeriod
-        return today.subtract(retentionPeriod, 'weeks')
+        return today.subtract(retentionPeriod, 'months')
     }
 
     /**
@@ -58,9 +58,12 @@ class MonthlyBackupAction extends BackupAction {
         const regex = new RegExp('^month-(\\d+)-(\\d+)-.*')
         const match = regex.exec(fileName)
         if (!match) return false
-        const backupMonthNumber = match[1].toString()
-        const retentionStartMonth = retentionStartDate.month()
-        return backupMonthNumber <= retentionStartMonth
+        const backupYear = parseInt(match[1], 10)
+        const backupMonthNumber = parseInt(match[2], 10) // 1-12
+        if (isNaN(backupYear) || isNaN(backupMonthNumber)) return false
+
+        const backupMoment = moment({ year: backupYear, month: backupMonthNumber - 1, day: 1 }).startOf('month')
+        return backupMoment.isBefore(moment(retentionStartDate).startOf('month'))
     }
 
     /**
